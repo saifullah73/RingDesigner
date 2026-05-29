@@ -7,7 +7,10 @@
       "PowerShell(Set-Location \"D:\\\\Dev\\\\RingDesigner\"; $psi = New-Object System.Diagnostics.ProcessStartInfo; $psi.FileName = \"python\"; $psi.Arguments = \"-m http.server 7845\"; $psi.WorkingDirectory = \"D:\\\\Dev\\\\RingDesigner\"; $psi.WindowStyle = \"Hidden\"; $psi.UseShellExecute = $true; $p = [System.Diagnostics.Process]::Start\\($psi\\); Start-Sleep 2; \\(Invoke-WebRequest -Uri \"http://localhost:7845\" -UseBasicParsing\\).StatusCode)",
       "PowerShell($html = \\(Invoke-WebRequest -Uri \"http://localhost:7845\" -UseBasicParsing\\).Content; $html -match 'Ring Designer' -and $html -match 'viewport' -and $html -match 'side-panel')",
       "PowerShell(Start-Process \"http://localhost:7845\"; Write-Output \"Opened\")",
-      "PowerShell(Start-Sleep 3; Add-Type -AssemblyName System.Windows.Forms; Add-Type -AssemblyName System.Drawing; $screen = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds; $bmp = New-Object System.Drawing.Bitmap\\($screen.Width, $screen.Height\\); $g = [System.Drawing.Graphics]::FromImage\\($bmp\\); $g.CopyFromScreen\\($screen.Location, [System.Drawing.Point]::Empty, $screen.Size\\); $bmp.Save\\(\"C:\\\\Users\\\\saifu\\\\AppData\\\\Local\\\\Temp\\\\ring-designer-screenshot.png\"\\); $g.Dispose\\(\\); $bmp.Dispose\\(\\); Write-Output \"Screenshot saved\")"
+      "PowerShell(Start-Sleep 3; Add-Type -AssemblyName System.Windows.Forms; Add-Type -AssemblyName System.Drawing; $screen = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds; $bmp = New-Object System.Drawing.Bitmap\\($screen.Width, $screen.Height\\); $g = [System.Drawing.Graphics]::FromImage\\($bmp\\); $g.CopyFromScreen\\($screen.Location, [System.Drawing.Point]::Empty, $screen.Size\\); $bmp.Save\\(\"C:\\\\Users\\\\saifu\\\\AppData\\\\Local\\\\Temp\\\\ring-designer-screenshot.png\"\\); $g.Dispose\\(\\); $bmp.Dispose\\(\\); Write-Output \"Screenshot saved\")",
+      "Bash(node --check js/ring.js)",
+      "Bash(cat)",
+      "Bash(node /tmp/check.mjs)"
     ]
   }
 }

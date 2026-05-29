@@ -31,8 +31,8 @@ function rebuildRing() {
 rebuildRing();
 
 // ── Step wizard ──────────────────────────────────────────────────────────────
-const STEPS  = ['style', 'zone', 'location', 'terrain', 'shoulder', 'band'];
-const TITLES = ['Style', 'Zone', 'Location', 'Terrain', 'Shoulder', 'Band'];
+const STEPS  = ['style', 'zone', 'location', 'terrain'];
+const TITLES = ['Style', 'Zone', 'Location', 'Terrain'];
 let step = 0;
 
 function goTo(n) {
@@ -266,26 +266,6 @@ document.querySelectorAll('.detail-card').forEach(card => {
       setGrid(DETAIL_GRIDS[card.dataset.detail] ?? 64);
       rebuildRing();
     }
-  });
-});
-
-// ── Shoulder cards ───────────────────────────────────────────────────────────
-document.querySelectorAll('[data-shoulder]').forEach(card => {
-  card.addEventListener('click', () => {
-    document.querySelectorAll('[data-shoulder]').forEach(c => c.classList.remove('active'));
-    card.classList.add('active');
-    ringConfig.shoulder = card.dataset.shoulder;
-    if (usingDefault) rebuildRing();
-  });
-});
-
-// ── Band cards ───────────────────────────────────────────────────────────────
-document.querySelectorAll('[data-band]').forEach(card => {
-  card.addEventListener('click', () => {
-    document.querySelectorAll('[data-band]').forEach(c => c.classList.remove('active'));
-    card.classList.add('active');
-    ringConfig.band = card.dataset.band;
-    if (usingDefault) rebuildRing();
   });
 });
 
