@@ -67,6 +67,28 @@
 
           <!-- Uploaded model: detect or paint -->
           <div id="zone-custom" class="hidden">
+
+            <!-- Orientation correction -->
+            <div id="zone-orient">
+              <p class="field-label" style="margin-bottom:2px">Orientation</p>
+              <div class="slider-row">
+                <label class="field-label" style="min-width:20px">X</label>
+                <input type="range" id="slider-rot-x" class="full-slider" min="-180" max="180" value="0" step="1" />
+                <span id="val-rot-x" style="min-width:34px;text-align:right;font-size:12px;color:var(--text-dim)">0°</span>
+              </div>
+              <div class="slider-row">
+                <label class="field-label" style="min-width:20px">Y</label>
+                <input type="range" id="slider-rot-y" class="full-slider" min="-180" max="180" value="0" step="1" />
+                <span id="val-rot-y" style="min-width:34px;text-align:right;font-size:12px;color:var(--text-dim)">0°</span>
+              </div>
+              <div class="slider-row">
+                <label class="field-label" style="min-width:20px">Z</label>
+                <input type="range" id="slider-rot-z" class="full-slider" min="-180" max="180" value="0" step="1" />
+                <span id="val-rot-z" style="min-width:34px;text-align:right;font-size:12px;color:var(--text-dim)">0°</span>
+              </div>
+              <button class="pill-btn" id="btn-reset-orient" style="width:100%;margin-top:2px;border:1.5px solid var(--border)">Reset</button>
+            </div>
+
             <div class="terrain-source-tabs">
               <button class="zone-tab active" data-zone="auto">Auto Detect</button>
               <button class="zone-tab" data-zone="paint">Paint Mode</button>

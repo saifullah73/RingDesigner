@@ -233,6 +233,8 @@ label.option-card { cursor: pointer; }
 }
 .text-input:focus { border-color: var(--text); }
 /* Zone step */
+.slider-row { display: flex; align-items: center; gap: 8px; }
+#zone-orient { display:flex; flex-direction:column; gap:6px; padding-bottom:12px; border-bottom:1px solid var(--border); margin-bottom:4px; }
 .zone-auto-msg { display:flex; flex-direction:column; align-items:center; gap:10px; padding:16px 0; }
 .zone-tab {
   flex:1; background:none; border:none; border-bottom:2px solid transparent;

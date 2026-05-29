@@ -96,6 +96,7 @@ document.getElementById('input-model').addEventListener('change', async e => {
     document.getElementById('zone-default-msg').classList.add('hidden');
     document.getElementById('zone-custom').classList.remove('hidden');
     // Reset zone status
+    _resetOrientSliders();
     document.getElementById('zone-detect-status').textContent = '—';
     document.getElementById('zone-paint-status').textContent  = '0 vertices painted';
     if (currentHeightmap) applyDisplacement(heightPct, currentHeightmap);
@@ -133,6 +134,30 @@ document.querySelectorAll('.zone-tab').forEach(tab => {
     panel.classList.add('active');
   });
 });
+
+// ── Zone: orientation sliders ────────────────────────────────────────────────
+['x', 'y', 'z'].forEach(axis => {
+  document.getElementById('slider-rot-' + axis).addEventListener('input', () => {
+    const deg = parseInt(document.getElementById('slider-rot-' + axis).value);
+    document.getElementById('val-rot-' + axis).textContent = deg + '°';
+    if (uploadedGroup) uploadedGroup.rotation[axis] = deg * Math.PI / 180;
+  });
+});
+
+document.getElementById('btn-reset-orient').addEventListener('click', () => {
+  ['x', 'y', 'z'].forEach(axis => {
+    document.getElementById('slider-rot-' + axis).value = 0;
+    document.getElementById('val-rot-' + axis).textContent = '0°';
+    if (uploadedGroup) uploadedGroup.rotation[axis] = 0;
+  });
+});
+
+function _resetOrientSliders() {
+  ['x', 'y', 'z'].forEach(axis => {
+    document.getElementById('slider-rot-' + axis).value = 0;
+    document.getElementById('val-rot-' + axis).textContent = '0°';
+  });
+}
 
 // ── Zone: auto detect ────────────────────────────────────────────────────────
 const sliderThresh = document.getElementById('slider-zone-threshold');
