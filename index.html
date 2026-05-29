@@ -56,7 +56,51 @@
           <div id="model-status" class="hint-text" style="text-align:center"></div>
         </div>
 
-        <!-- Step 2: Location -->
+        <!-- Step 2: Zone -->
+        <div class="step-panel" id="step-zone">
+
+          <!-- Default ring: no action needed -->
+          <div id="zone-default-msg" class="zone-auto-msg">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><polyline points="9 12 11 14 15 10"/></svg>
+            <p class="step-desc" style="text-align:center">Displacement is applied to the bezel top face automatically.</p>
+          </div>
+
+          <!-- Uploaded model: detect or paint -->
+          <div id="zone-custom" class="hidden">
+            <div class="terrain-source-tabs">
+              <button class="zone-tab active" data-zone="auto">Auto Detect</button>
+              <button class="zone-tab" data-zone="paint">Paint Mode</button>
+            </div>
+
+            <!-- Auto detect panel -->
+            <div class="zone-panel active" id="zone-auto-panel">
+              <div class="slider-row" style="margin-top:4px">
+                <label class="field-label" style="min-width:72px">Threshold</label>
+                <input type="range" id="slider-zone-threshold" class="full-slider" min="1" max="50" value="15" step="1" />
+                <span id="val-zone-threshold" style="min-width:28px;text-align:right;font-size:12px;color:var(--text-dim)">15%</span>
+              </div>
+              <button class="pill-btn dark" id="btn-detect" style="width:100%;margin-top:4px">Detect Top Face</button>
+              <p class="hint-text" id="zone-detect-status" style="margin-top:4px">—</p>
+            </div>
+
+            <!-- Paint panel -->
+            <div class="zone-panel hidden" id="zone-paint-panel">
+              <p class="hint-text" style="margin-top:4px">Click and drag on the model to paint. Orbit is paused while painting.</p>
+              <div class="slider-row" style="margin-top:8px">
+                <label class="field-label" style="min-width:72px">Brush</label>
+                <input type="range" id="slider-brush" class="full-slider" min="2" max="60" value="20" step="1" />
+                <span id="val-brush" style="min-width:28px;text-align:right;font-size:12px;color:var(--text-dim)">20</span>
+              </div>
+              <div class="row gap-8" style="margin-top:8px">
+                <button class="pill-btn dark" id="btn-paint-toggle" style="flex:1">Enable Paint</button>
+                <button class="pill-btn" id="btn-paint-clear" style="flex:1;border:1.5px solid var(--border)">Clear</button>
+              </div>
+              <p class="hint-text" id="zone-paint-status" style="margin-top:6px">0 vertices painted</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 3: Location -->
         <div class="step-panel" id="step-location">
           <div class="terrain-source-tabs">
             <button class="source-tab active" data-source="upload">Upload Heightmap</button>
@@ -167,30 +211,17 @@
       <!-- Bottom progress bar -->
       <div class="bottom-bar">
         <div class="progress-track">
-          <div class="progress-step done" data-step="0">
-            <div class="step-dot"></div>
-            <span>Style</span>
-          </div>
+          <div class="progress-step done" data-step="0"><div class="step-dot"></div><span>Style</span></div>
           <div class="progress-line"></div>
-          <div class="progress-step active" data-step="1">
-            <div class="step-dot"></div>
-            <span>Location</span>
-          </div>
+          <div class="progress-step active" data-step="1"><div class="step-dot"></div><span>Zone</span></div>
           <div class="progress-line"></div>
-          <div class="progress-step" data-step="2">
-            <div class="step-dot"></div>
-            <span>Terrain</span>
-          </div>
+          <div class="progress-step" data-step="2"><div class="step-dot"></div><span>Location</span></div>
           <div class="progress-line"></div>
-          <div class="progress-step" data-step="3">
-            <div class="step-dot"></div>
-            <span>Shoulder</span>
-          </div>
+          <div class="progress-step" data-step="3"><div class="step-dot"></div><span>Terrain</span></div>
           <div class="progress-line"></div>
-          <div class="progress-step" data-step="4">
-            <div class="step-dot"></div>
-            <span>Band</span>
-          </div>
+          <div class="progress-step" data-step="4"><div class="step-dot"></div><span>Shoulder</span></div>
+          <div class="progress-line"></div>
+          <div class="progress-step" data-step="5"><div class="step-dot"></div><span>Band</span></div>
         </div>
         <button class="pill-btn dark next-btn" id="btn-next-bottom">Next &#8594;</button>
       </div>

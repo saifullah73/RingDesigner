@@ -83,5 +83,5 @@ export function createScene(canvas) {
     renderer.render(scene, camera);
   })();
 
-  return { scene, camera, controls, renderer, setMesh, getMesh };
+  return { scene, camera, controls, renderer, canvas, setMesh, getMesh };
 }

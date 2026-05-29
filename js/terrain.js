@@ -1,44 +1,117 @@
 import * as Ring from './ring.js';
 
+// ── Custom displacement target (uploaded models) ─────────────────────────────
+// null = use default ring bezel
+let customTarget = null;
+
+const CUSTOM_MAX_DISPLACE = 0.35;
+
+export function setCustomTarget(mesh, weights) {
+  if (!mesh) { customTarget = null; return; }
+
+  const geo = mesh.geometry;
+  const pos = geo.attributes.position.array;
+  const n   = pos.length / 3;
+
+  // Snapshot current positions as base
+  const basePos = new Float32Array(pos.length);
+  basePos.set(pos);
+
+  // Top-down bounding-box UV projection over painted region
+  let minX = Infinity, maxX = -Infinity;
+  let minZ = Infinity, maxZ = -Infinity;
+  for (let i = 0; i < n; i++) {
+    if (weights && weights[i] <= 0) continue;
+    if (pos[i*3]   < minX) minX = pos[i*3];
+    if (pos[i*3]   > maxX) maxX = pos[i*3];
+    if (pos[i*3+2] < minZ) minZ = pos[i*3+2];
+    if (pos[i*3+2] > maxZ) maxZ = pos[i*3+2];
+  }
+  if (!isFinite(minX)) { minX = 0; maxX = 1; minZ = 0; maxZ = 1; }
+  const rX = maxX - minX || 1;
+  const rZ = maxZ - minZ || 1;
+
+  const uvs = new Float32Array(n * 2);
+  for (let i = 0; i < n; i++) {
+    uvs[i*2]     = (pos[i*3]   - minX) / rX;
+    uvs[i*2 + 1] = (pos[i*3+2] - minZ) / rZ;
+  }
+
+  customTarget = { geo, basePos, weights, uvs };
+}
+
+export function clearCustomTarget() { customTarget = null; }
+
+// ── Main entry point ─────────────────────────────────────────────────────────
 export function applyDisplacement(heightPct, heightmap) {
+  if (customTarget) _applyCustom(heightPct, heightmap);
+  else              _applyDefault(heightPct, heightmap);
+}
+
+// ── Default ring bezel ───────────────────────────────────────────────────────
+function _applyDefault(heightPct, heightmap) {
   const geo   = Ring.bezelGeometry;
   const baseY = Ring.bezelBaseY;
   if (!geo || !baseY || !heightmap) return;
 
-  const GRID   = Ring.GRID;
-  const stride = GRID + 1;
-  const scale  = (heightPct / 100) * Ring.BEZEL_MAX_DISPLACE;
-  const pos    = geo.attributes.position.array;
-
-  // Source heightmap may have been created at a different resolution.
-  // Derive its stride from its length (it is always square: (n+1)^2).
+  const GRID      = Ring.GRID;
+  const stride    = GRID + 1;
+  const scale     = (heightPct / 100) * Ring.BEZEL_MAX_DISPLACE;
+  const pos       = geo.attributes.position.array;
   const srcStride = Math.round(Math.sqrt(heightmap.length));
 
   for (let i = 0; i < baseY.length; i++) {
     const row  = Math.floor(i / stride);
     const col  = i % stride;
     const edge = row === 0 || row === GRID || col === 0 || col === GRID;
-    // Sample heightmap by UV with bilinear interpolation
-    const h = edge ? 0 : sampleBilinear(heightmap, srcStride, col / GRID, row / GRID);
-    pos[i * 3 + 1] = baseY[i] + h * scale;
+    const h    = edge ? 0 : sampleBilinear(heightmap, srcStride, col / GRID, row / GRID);
+    pos[i*3+1] = baseY[i] + h * scale;
   }
 
   geo.attributes.position.needsUpdate = true;
   geo.computeVertexNormals();
 }
 
+// ── Uploaded model with weight map ───────────────────────────────────────────
+function _applyCustom(heightPct, heightmap) {
+  const { geo, basePos, weights, uvs } = customTarget;
+  if (!geo || !heightmap) return;
+
+  const pos       = geo.attributes.position.array;
+  const scale     = (heightPct / 100) * CUSTOM_MAX_DISPLACE;
+  const srcStride = Math.round(Math.sqrt(heightmap.length));
+  const n         = pos.length / 3;
+
+  for (let i = 0; i < n; i++) {
+    const w = weights ? weights[i] : 1;
+    // Always reset to base first
+    pos[i*3]   = basePos[i*3];
+    pos[i*3+1] = basePos[i*3+1];
+    pos[i*3+2] = basePos[i*3+2];
+    if (w > 0) {
+      const h = sampleBilinear(heightmap, srcStride, uvs[i*2], uvs[i*2+1]);
+      pos[i*3+1] += h * scale * w;
+    }
+  }
+
+  geo.attributes.position.needsUpdate = true;
+  geo.computeVertexNormals();
+}
+
+// ── Bilinear heightmap sampler ────────────────────────────────────────────────
 function sampleBilinear(map, stride, u, v) {
-  const x  = u * (stride - 1);
-  const y  = v * (stride - 1);
+  const x  = Math.max(0, Math.min(1, u)) * (stride - 1);
+  const y  = Math.max(0, Math.min(1, v)) * (stride - 1);
   const x0 = Math.floor(x), x1 = Math.min(x0 + 1, stride - 1);
   const y0 = Math.floor(y), y1 = Math.min(y0 + 1, stride - 1);
   const fx = x - x0, fy = y - y0;
-  return map[y0 * stride + x0] * (1 - fx) * (1 - fy)
-       + map[y0 * stride + x1] *      fx  * (1 - fy)
-       + map[y1 * stride + x0] * (1 - fx) *      fy
-       + map[y1 * stride + x1] *      fx  *      fy;
+  return map[y0*stride+x0] * (1-fx)*(1-fy)
+       + map[y0*stride+x1] *    fx *(1-fy)
+       + map[y1*stride+x0] * (1-fx)*   fy
+       + map[y1*stride+x1] *    fx *   fy;
 }
 
+// ── Image / elevation converters (used by picker.js and mapbox.js) ────────────
 export function heightmapFromImage(img, cropRect, gridSize) {
   const off = document.createElement('canvas');
   off.width  = gridSize + 1;
@@ -47,17 +120,17 @@ export function heightmapFromImage(img, cropRect, gridSize) {
   ctx.drawImage(img, cropRect.x, cropRect.y, cropRect.w, cropRect.h,
                 0, 0, gridSize + 1, gridSize + 1);
   const data = ctx.getImageData(0, 0, gridSize + 1, gridSize + 1).data;
-  const map  = new Float32Array((gridSize + 1) * (gridSize + 1));
+  const map  = new Float32Array((gridSize + 1) ** 2);
   for (let i = 0; i < map.length; i++) {
-    map[i] = 0.299 * data[i * 4] / 255
-           + 0.587 * data[i * 4 + 1] / 255
-           + 0.114 * data[i * 4 + 2] / 255;
+    map[i] = 0.299 * data[i*4] / 255
+           + 0.587 * data[i*4+1] / 255
+           + 0.114 * data[i*4+2] / 255;
   }
   return map;
 }
 
 export function heightmapFromElevations(elevations, gridSize) {
-  const n   = (gridSize + 1) * (gridSize + 1);
+  const n   = (gridSize + 1) ** 2;
   const map = new Float32Array(n);
   let mn = Infinity, mx = -Infinity;
   for (let i = 0; i < elevations.length; i++) {

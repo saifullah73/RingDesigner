@@ -232,4 +232,18 @@ label.option-card { cursor: pointer; }
   color: var(--text);
 }
 .text-input:focus { border-color: var(--text); }
+/* Zone step */
+.zone-auto-msg { display:flex; flex-direction:column; align-items:center; gap:10px; padding:16px 0; }
+.zone-tab {
+  flex:1; background:none; border:none; border-bottom:2px solid transparent;
+  padding:10px; font-size:13px; font-weight:500; color:var(--text-dim);
+  cursor:pointer; margin-bottom:-1px; transition:color .15s, border-color .15s;
+}
+.zone-tab.active { color:var(--text); border-bottom-color:var(--text); }
+.zone-panel { display:none; flex-direction:column; gap:4px; margin-top:12px; }
+.zone-panel.active { display:flex; }
+
+/* Paint toggle active state */
+.pill-btn.painting { background: #e74c3c; }
+
 .hidden { display: none !important; }
