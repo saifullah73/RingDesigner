@@ -81,6 +81,8 @@ html, body { height: 100%; background: var(--bg); color: var(--text); font-famil
 
 /* ---- Option cards (Style / Shoulder / Band) ---- */
 .card-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.card-grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
+label.option-card { cursor: pointer; }
 
 .option-card {
   border: 1.5px solid var(--border);

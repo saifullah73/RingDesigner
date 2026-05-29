@@ -37,27 +37,23 @@
 
         <!-- Step 1: Style -->
         <div class="step-panel active" id="step-style">
-          <p class="step-desc">Choose the shape of the ring bezel top.</p>
-          <div class="card-grid">
-            <div class="option-card active" data-style="square">
+          <p class="step-desc">Start with the default signet ring or upload your own 3D model (GLB, GLTF, OBJ, STL).</p>
+          <div class="card-grid cols-2">
+            <div class="option-card active" id="card-default">
               <div class="card-icon">
-                <svg viewBox="0 0 60 60"><rect x="10" y="10" width="40" height="40" rx="3" fill="none" stroke="currentColor" stroke-width="3"/></svg>
+                <svg viewBox="0 0 60 60"><circle cx="30" cy="30" r="18" fill="none" stroke="currentColor" stroke-width="3"/><circle cx="30" cy="30" r="10" fill="none" stroke="currentColor" stroke-width="2"/><rect x="18" y="12" width="24" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="2.5"/></svg>
               </div>
-              <span>Square</span>
+              <span>Default Signet Ring</span>
             </div>
-            <div class="option-card" data-style="rectangle">
+            <label class="option-card" id="card-upload-model">
               <div class="card-icon">
-                <svg viewBox="0 0 60 60"><rect x="6" y="14" width="48" height="32" rx="3" fill="none" stroke="currentColor" stroke-width="3"/></svg>
+                <svg viewBox="0 0 60 60"><path d="M30 40V20M22 28l8-8 8 8" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><rect x="10" y="44" width="40" height="6" rx="2" fill="none" stroke="currentColor" stroke-width="2.5"/></svg>
               </div>
-              <span>Rectangle</span>
-            </div>
-            <div class="option-card" data-style="oval">
-              <div class="card-icon">
-                <svg viewBox="0 0 60 60"><ellipse cx="30" cy="30" rx="22" ry="16" fill="none" stroke="currentColor" stroke-width="3"/></svg>
-              </div>
-              <span>Oval</span>
-            </div>
+              <span>Upload Model</span>
+              <input type="file" id="input-model" accept=".glb,.gltf,.obj,.stl" hidden />
+            </label>
           </div>
+          <div id="model-status" class="hint-text" style="text-align:center"></div>
         </div>
 
         <!-- Step 2: Location -->

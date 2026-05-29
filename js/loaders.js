@@ -39,10 +39,13 @@ export async function loadModel(file, faceThresholdPct) {
   box.getCenter(center);
   group.position.sub(center.multiplyScalar(scale));
 
-  // Apply standard material to all meshes
+  // Apply silver material, double-sided so all faces render
   group.traverse(obj => {
     if (obj.isMesh) {
-      obj.material = new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.9, roughness: 0.2 });
+      obj.material = new THREE.MeshPhysicalMaterial({
+        color: 0xf0eeee, metalness: 1.0, roughness: 0.07,
+        side: THREE.DoubleSide,
+      });
       obj.castShadow = true;
     }
   });
