@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ring Designer</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link href="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css" rel="stylesheet" />
+</head>
+<body>
+  <div class="app">
+
+    <!-- Left: 3D Viewport -->
+    <div class="viewport-half">
+      <canvas id="viewport"></canvas>
+      <div class="ring-label">
+        <span id="ring-name">SIGNET RING</span>
+      </div>
+      <button id="btn-share" class="share-btn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+        Export STL
+      </button>
+    </div>
+
+    <!-- Right: Editor Panel -->
+    <div class="editor-half">
+      <div class="step-header">
+        <button class="nav-arrow" id="btn-prev">&#8249;</button>
+        <div class="step-title-wrap">
+          <h2 class="step-title" id="step-title">Style</h2>
+          <span class="step-count" id="step-count">1/5</span>
+        </div>
+        <button class="nav-arrow" id="btn-next">&#8250;</button>
+      </div>
+
+      <div class="step-body">
+
+        <!-- Step 1: Style -->
+        <div class="step-panel active" id="step-style">
+          <p class="step-desc">Choose the shape of the ring bezel top.</p>
+          <div class="card-grid">
+            <div class="option-card active" data-style="square">
+              <div class="card-icon">
+                <svg viewBox="0 0 60 60"><rect x="10" y="10" width="40" height="40" rx="3" fill="none" stroke="currentColor" stroke-width="3"/></svg>
+              </div>
+              <span>Square</span>
+            </div>
+            <div class="option-card" data-style="rectangle">
+              <div class="card-icon">
+                <svg viewBox="0 0 60 60"><rect x="6" y="14" width="48" height="32" rx="3" fill="none" stroke="currentColor" stroke-width="3"/></svg>
+              </div>
+              <span>Rectangle</span>
+            </div>
+            <div class="option-card" data-style="oval">
+              <div class="card-icon">
+                <svg viewBox="0 0 60 60"><ellipse cx="30" cy="30" rx="22" ry="16" fill="none" stroke="currentColor" stroke-width="3"/></svg>
+              </div>
+              <span>Oval</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 2: Location -->
+        <div class="step-panel" id="step-location">
+          <div class="terrain-source-tabs">
+            <button class="source-tab active" data-source="upload">Upload Heightmap</button>
+            <button class="source-tab" data-source="map">Live Map</button>
+          </div>
+
+          <!-- Upload sub-panel -->
+          <div class="source-panel active" id="source-upload">
+            <label class="upload-zone" id="upload-zone">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              <span id="upload-label">Click to upload heightmap image</span>
+              <input type="file" id="input-terrain" accept="image/*" hidden />
+            </label>
+            <div id="terrain-picker-wrap" class="picker-wrap hidden">
+              <canvas id="terrain-picker"></canvas>
+              <div class="picker-crop-box" id="picker-overlay"></div>
+            </div>
+            <p class="hint-text">Scroll to zoom · Drag to pan · Box shows crop area</p>
+          </div>
+
+          <!-- Map sub-panel -->
+          <div class="source-panel" id="source-map">
+            <div id="mapbox-token-wrap" class="token-wrap">
+              <label class="field-label">Mapbox Public Token</label>
+              <div class="token-row">
+                <input type="text" id="input-mapbox-token" placeholder="pk.eyJ1…" class="text-input" />
+                <button id="btn-load-map" class="pill-btn dark">Load</button>
+              </div>
+              <a href="https://account.mapbox.com/access-tokens/" target="_blank" class="link-sm">Get a free token →</a>
+            </div>
+            <div id="map-wrap" class="map-wrap hidden">
+              <div id="map"></div>
+              <div class="map-crop-box" id="map-selection-box"></div>
+            </div>
+            <p class="hint-text" id="map-hint" style="display:none">Pan &amp; zoom to position · Updates automatically</p>
+          </div>
+        </div>
+
+        <!-- Step 3: Terrain -->
+        <div class="step-panel" id="step-terrain">
+          <div class="terrain-row">
+            <span class="field-label">Terrain Height</span>
+            <span class="terrain-val" id="terrain-val-display">30%</span>
+            <span class="exag-label" id="exag-label">1.0× exaggeration</span>
+          </div>
+          <input type="range" id="slider-height" class="full-slider" min="0" max="100" value="30" step="1" />
+
+          <div class="detail-section">
+            <span class="field-label">Detail</span>
+            <div class="detail-cards">
+              <div class="detail-card" data-detail="low">Low</div>
+              <div class="detail-card active" data-detail="medium">Medium</div>
+              <div class="detail-card" data-detail="high">High</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 4: Shoulder -->
+        <div class="step-panel" id="step-shoulder">
+          <div class="card-grid">
+            <div class="option-card active" data-shoulder="straight">
+              <div class="card-icon">
+                <svg viewBox="0 0 60 80"><path d="M20 10 L20 70 M40 10 L40 70" fill="none" stroke="currentColor" stroke-width="3"/><path d="M20 10 Q30 8 40 10" fill="none" stroke="currentColor" stroke-width="3"/><path d="M20 70 Q30 72 40 70" fill="none" stroke="currentColor" stroke-width="3"/></svg>
+              </div>
+              <span>Straight</span>
+            </div>
+            <div class="option-card" data-shoulder="classic">
+              <div class="card-icon">
+                <svg viewBox="0 0 60 80"><path d="M15 10 Q20 40 20 70 M45 10 Q40 40 40 70" fill="none" stroke="currentColor" stroke-width="3"/><path d="M15 10 Q30 8 45 10" fill="none" stroke="currentColor" stroke-width="3"/><path d="M20 70 Q30 72 40 70" fill="none" stroke="currentColor" stroke-width="3"/></svg>
+              </div>
+              <span>Classic</span>
+            </div>
+            <div class="option-card" data-shoulder="curved">
+              <div class="card-icon">
+                <svg viewBox="0 0 60 80"><path d="M12 10 Q22 40 22 70 M48 10 Q38 40 38 70" fill="none" stroke="currentColor" stroke-width="3"/><path d="M12 10 Q30 6 48 10" fill="none" stroke="currentColor" stroke-width="3"/><path d="M22 70 Q30 74 38 70" fill="none" stroke="currentColor" stroke-width="3"/></svg>
+              </div>
+              <span>Curved</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 5: Band -->
+        <div class="step-panel" id="step-band">
+          <div class="card-grid">
+            <div class="option-card active" data-band="flat">
+              <div class="card-icon">
+                <svg viewBox="0 0 60 30"><rect x="5" y="10" width="50" height="10" rx="1" fill="none" stroke="currentColor" stroke-width="3"/></svg>
+              </div>
+              <span>Flat</span>
+            </div>
+            <div class="option-card" data-band="classic">
+              <div class="card-icon">
+                <svg viewBox="0 0 60 30"><path d="M5 20 Q30 8 55 20" fill="none" stroke="currentColor" stroke-width="3"/><path d="M5 20 Q30 22 55 20" fill="none" stroke="currentColor" stroke-width="3"/></svg>
+              </div>
+              <span>Classic</span>
+            </div>
+            <div class="option-card" data-band="dshaped">
+              <div class="card-icon">
+                <svg viewBox="0 0 60 30"><path d="M5 8 Q30 5 55 8 Q55 22 55 22 Q30 25 5 22 Z" fill="none" stroke="currentColor" stroke-width="3"/></svg>
+              </div>
+              <span>D-Shaped</span>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /step-body -->
+
+      <!-- Bottom progress bar -->
+      <div class="bottom-bar">
+        <div class="progress-track">
+          <div class="progress-step done" data-step="0">
+            <div class="step-dot"></div>
+            <span>Style</span>
+          </div>
+          <div class="progress-line"></div>
+          <div class="progress-step active" data-step="1">
+            <div class="step-dot"></div>
+            <span>Location</span>
+          </div>
+          <div class="progress-line"></div>
+          <div class="progress-step" data-step="2">
+            <div class="step-dot"></div>
+            <span>Terrain</span>
+          </div>
+          <div class="progress-line"></div>
+          <div class="progress-step" data-step="3">
+            <div class="step-dot"></div>
+            <span>Shoulder</span>
+          </div>
+          <div class="progress-line"></div>
+          <div class="progress-step" data-step="4">
+            <div class="step-dot"></div>
+            <span>Band</span>
+          </div>
+        </div>
+        <button class="pill-btn dark next-btn" id="btn-next-bottom">Next &#8594;</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/"
+    }
+  }
+  </script>
+  <script src="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js"></script>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

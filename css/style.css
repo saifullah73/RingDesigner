@@ -1,0 +1,233 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --white: #ffffff;
+  --bg: #f4f4f2;
+  --border: #e0e0dc;
+  --border-active: #222;
+  --text: #111111;
+  --text-dim: #888888;
+  --accent: #3d9c5a;
+  --accent-hover: #2e7d46;
+  --radius: 10px;
+  --bottom-h: 64px;
+}
+
+html, body { height: 100%; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 14px; overflow: hidden; }
+
+/* ---- App layout ---- */
+.app { display: flex; height: 100vh; }
+
+/* ---- Left: viewport ---- */
+.viewport-half {
+  flex: 1;
+  position: relative;
+  background: #e8e8e4;
+  overflow: hidden;
+}
+#viewport { width: 100%; height: 100%; display: block; }
+
+.ring-label {
+  position: absolute; bottom: 20px; left: 20px;
+  font-size: 11px; font-weight: 500; letter-spacing: .12em;
+  text-transform: uppercase; color: #444;
+}
+
+.share-btn {
+  position: absolute; bottom: 16px; right: 20px;
+  display: flex; align-items: center; gap: 6px;
+  background: var(--accent); color: #fff;
+  border: none; border-radius: 50px;
+  padding: 8px 18px; font-size: 13px; font-weight: 500;
+  cursor: pointer; transition: background .15s;
+}
+.share-btn:hover { background: var(--accent-hover); }
+
+/* ---- Right: editor ---- */
+.editor-half {
+  width: 480px; min-width: 400px;
+  background: var(--white);
+  border-left: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+
+/* Step header */
+.step-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 20px 28px 0;
+  flex-shrink: 0;
+}
+.step-title-wrap { text-align: center; }
+.step-title { font-size: 20px; font-weight: 600; display: inline; }
+.step-count { font-size: 14px; color: var(--text-dim); margin-left: 6px; font-weight: 400; }
+.nav-arrow {
+  background: none; border: none; font-size: 24px; color: var(--text-dim);
+  cursor: pointer; padding: 4px 8px; border-radius: 6px;
+  transition: color .15s;
+}
+.nav-arrow:hover { color: var(--text); }
+
+/* Step body (scrollable) */
+.step-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 28px;
+}
+.step-panel { display: none; flex-direction: column; gap: 16px; }
+.step-panel.active { display: flex; }
+
+.step-desc { color: var(--text-dim); font-size: 13px; }
+
+/* ---- Option cards (Style / Shoulder / Band) ---- */
+.card-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+
+.option-card {
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 8px 10px;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  cursor: pointer; transition: border-color .15s, background .15s;
+  background: var(--white);
+}
+.option-card:hover { border-color: #aaa; }
+.option-card.active { border-color: var(--border-active); background: #fafafa; }
+.option-card span { font-size: 12px; color: var(--text-dim); font-weight: 500; }
+.option-card.active span { color: var(--text); }
+
+.card-icon { width: 52px; height: 52px; display: flex; align-items: center; justify-content: center; }
+.card-icon svg { width: 100%; height: 100%; color: #aaa; }
+.option-card.active .card-icon svg { color: var(--text); }
+
+/* ---- Location step ---- */
+.terrain-source-tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); }
+.source-tab {
+  flex: 1; background: none; border: none; border-bottom: 2px solid transparent;
+  padding: 10px; font-size: 13px; font-weight: 500; color: var(--text-dim);
+  cursor: pointer; margin-bottom: -1px; transition: color .15s, border-color .15s;
+}
+.source-tab.active { color: var(--text); border-bottom-color: var(--text); }
+
+.source-panel { display: none; flex-direction: column; gap: 10px; margin-top: 12px; }
+.source-panel.active { display: flex; }
+
+.upload-zone {
+  border: 1.5px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 28px 16px;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  cursor: pointer; color: var(--text-dim); font-size: 13px;
+  transition: border-color .15s, background .15s;
+}
+.upload-zone:hover { border-color: #aaa; background: #fafafa; }
+
+.picker-wrap {
+  position: relative;
+  width: 100%; aspect-ratio: 1 / 0.75;
+  background: #eee;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+.picker-wrap.hidden { display: none; }
+#terrain-picker { width: 100%; height: 100%; display: block; cursor: grab; }
+#terrain-picker:active { cursor: grabbing; }
+.picker-crop-box {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  border: 2px solid var(--text);
+  box-shadow: 0 0 0 2000px rgba(0,0,0,.3);
+  pointer-events: none;
+}
+
+/* Map */
+.token-wrap { display: flex; flex-direction: column; gap: 6px; }
+.token-row { display: flex; gap: 6px; }
+.map-wrap { position: relative; display: flex; flex-direction: column; gap: 6px; }
+.map-wrap.hidden { display: none; }
+#map { width: 100%; height: 260px; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border); }
+.map-crop-box {
+  position: absolute;
+  border: 2px solid var(--text);
+  pointer-events: none;
+  display: none;
+}
+
+/* ---- Terrain step ---- */
+.terrain-row { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.terrain-val { font-size: 18px; font-weight: 600; }
+.exag-label { font-size: 12px; color: var(--text-dim); margin-left: auto; }
+
+.full-slider {
+  width: 100%; height: 4px; accent-color: var(--text);
+  -webkit-appearance: none; appearance: none;
+  background: #ddd; border-radius: 2px; outline: none; cursor: pointer;
+}
+.full-slider::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 18px; height: 18px;
+  border-radius: 50%; background: var(--text); cursor: pointer;
+}
+
+.detail-section { display: flex; flex-direction: column; gap: 10px; }
+.detail-cards { display: flex; gap: 8px; }
+.detail-card {
+  flex: 1; text-align: center; padding: 8px;
+  border: 1.5px solid var(--border); border-radius: 8px;
+  font-size: 13px; font-weight: 500; color: var(--text-dim);
+  cursor: pointer; transition: border-color .15s;
+}
+.detail-card:hover { border-color: #aaa; }
+.detail-card.active { border-color: var(--border-active); color: var(--text); }
+
+/* ---- Bottom bar ---- */
+.bottom-bar {
+  height: var(--bottom-h);
+  border-top: 1px solid var(--border);
+  display: flex; align-items: center;
+  padding: 0 20px;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.progress-track {
+  flex: 1; display: flex; align-items: center; gap: 0;
+}
+.progress-step {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  cursor: pointer;
+}
+.step-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: #ddd; border: 2px solid #ddd;
+  transition: background .2s, border-color .2s;
+}
+.progress-step.done .step-dot { background: var(--accent); border-color: var(--accent); }
+.progress-step.active .step-dot { background: var(--text); border-color: var(--text); }
+.progress-step span { font-size: 10px; color: var(--text-dim); white-space: nowrap; }
+.progress-step.active span, .progress-step.done span { color: var(--text); }
+
+.progress-line { flex: 1; height: 2px; background: #ddd; min-width: 8px; margin-bottom: 14px; }
+.progress-line.done { background: var(--accent); }
+
+/* ---- Misc ---- */
+.pill-btn {
+  border: none; border-radius: 50px;
+  padding: 9px 20px; font-size: 13px; font-weight: 500; cursor: pointer;
+  transition: background .15s;
+  white-space: nowrap;
+}
+.pill-btn.dark { background: var(--text); color: #fff; }
+.pill-btn.dark:hover { background: #333; }
+
+.field-label { font-size: 12px; font-weight: 600; color: var(--text-dim); text-transform: uppercase; letter-spacing: .06em; }
+.hint-text { font-size: 11px; color: var(--text-dim); text-align: center; }
+.link-sm { font-size: 11px; color: var(--accent); text-decoration: none; }
+.link-sm:hover { text-decoration: underline; }
+.text-input {
+  flex: 1; border: 1.5px solid var(--border); border-radius: 8px;
+  padding: 7px 10px; font-size: 13px; outline: none; background: #fff;
+  color: var(--text);
+}
+.text-input:focus { border-color: var(--text); }
+.hidden { display: none !important; }
