@@ -7,6 +7,11 @@ let customTarget = null;
 
 const CUSTOM_MAX_DISPLACE = 0.35;
 
+// Number of vertices over which displacement ramps from 0 (at the painted
+// region's boundary) up to full, so the patch stays welded to the rest of the
+// model instead of lifting off as a floating cap.
+const FEATHER_RINGS = 3;
+
 // Pristine, undisplaced positions for a mesh, captured once and reused. This
 // prevents re-snapshotting already-displaced geometry (which would compound the
 // displacement every frame while painting).
@@ -52,7 +57,81 @@ export function setCustomTarget(mesh, weights) {
     uvs[i*2 + 1] = (v.z - minZ) / rZ;
   }
 
-  customTarget = { geo, mesh, basePos, weights, uvs };
+  const feather = computeBoundaryFeather(geo, basePos, weights, FEATHER_RINGS);
+
+  customTarget = { geo, mesh, basePos, weights, uvs, feather };
+}
+
+// Ramp displacement to 0 at the boundary of the painted region so the patch
+// rises out of a fixed rim (like the default bezel's clamped edges) instead of
+// floating off. Coincident vertices are welded by position first, so the hard
+// seam between the top face and the side walls is treated as a single boundary
+// rather than two free-floating copies.
+function computeBoundaryFeather(geo, basePos, weights, rings) {
+  const n = basePos.length / 3;
+
+  // Weld coincident vertices into position groups.
+  const keyToGroup = new Map();
+  const group = new Int32Array(n);
+  const P = 1e4;
+  for (let i = 0; i < n; i++) {
+    const key = Math.round(basePos[i*3]   * P) + '_' +
+                Math.round(basePos[i*3+1] * P) + '_' +
+                Math.round(basePos[i*3+2] * P);
+    let g = keyToGroup.get(key);
+    if (g === undefined) { g = keyToGroup.size; keyToGroup.set(key, g); }
+    group[i] = g;
+  }
+  const gCount = keyToGroup.size;
+
+  // Adjacency between groups, from triangles (indexed or sequential triples).
+  const idx    = geo.index ? geo.index.array : null;
+  const triLen = idx ? idx.length : n;
+  const adj    = Array.from({ length: gCount }, () => new Set());
+  for (let t = 0; t < triLen; t += 3) {
+    const a = group[idx ? idx[t]   : t];
+    const b = group[idx ? idx[t+1] : t+1];
+    const c = group[idx ? idx[t+2] : t+2];
+    adj[a].add(b); adj[b].add(a);
+    adj[b].add(c); adj[c].add(b);
+    adj[c].add(a); adj[a].add(c);
+  }
+
+  // A group is "selected" if any of its vertices is painted.
+  const selected = new Uint8Array(gCount);
+  for (let i = 0; i < n; i++) {
+    if (!weights || weights[i] > 0) selected[group[i]] = 1;
+  }
+
+  // Seed BFS at boundary groups: selected groups touching an unselected one.
+  const dist = new Int32Array(gCount).fill(-1);
+  let queue  = [];
+  for (let g = 0; g < gCount; g++) {
+    if (!selected[g]) continue;
+    for (const nb of adj[g]) {
+      if (!selected[nb]) { dist[g] = 0; queue.push(g); break; }
+    }
+  }
+
+  // BFS inward up to `rings` steps.
+  for (let d = 0; d < rings && queue.length; d++) {
+    const next = [];
+    for (const g of queue) {
+      for (const nb of adj[g]) {
+        if (selected[nb] && dist[nb] === -1) { dist[nb] = d + 1; next.push(nb); }
+      }
+    }
+    queue = next;
+  }
+
+  // Per-vertex feather: 0 at the boundary, ramping to 1 over `rings` vertices.
+  // Interior groups (never reached) stay at full displacement.
+  const feather = new Float32Array(n);
+  for (let i = 0; i < n; i++) {
+    const d = dist[group[i]];
+    feather[i] = d === -1 ? 1 : Math.min(1, d / rings);
+  }
+  return feather;
 }
 
 export function clearCustomTarget() { customTarget = null; }
@@ -89,7 +168,7 @@ function _applyDefault(heightPct, heightmap) {
 
 // ── Uploaded model with weight map ───────────────────────────────────────────
 function _applyCustom(heightPct, heightmap) {
-  const { geo, mesh, basePos, weights, uvs } = customTarget;
+  const { geo, mesh, basePos, weights, uvs, feather } = customTarget;
   if (!geo || !heightmap) return;
 
   const pos       = geo.attributes.position.array;
@@ -109,7 +188,7 @@ function _applyCustom(heightPct, heightmap) {
     if (w > 0) {
       const h = sampleBilinear(heightmap, srcStride, uvs[i*2], uvs[i*2+1]);
       wv.set(basePos[i*3], basePos[i*3+1], basePos[i*3+2]).applyMatrix4(mat);
-      wv.y += h * scale * w;
+      wv.y += h * scale * w * feather[i];
       wv.applyMatrix4(inv);
       pos[i*3]   = wv.x;
       pos[i*3+1] = wv.y;
