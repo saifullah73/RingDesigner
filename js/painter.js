@@ -49,6 +49,8 @@ export class Painter {
 
     this._rc = new THREE.Raycaster();
     this._v  = new THREE.Vector3();
+    this._vn = new THREE.Vector3();   // scratch: a vertex's world normal
+    this._hn = new THREE.Vector3();   // scratch: hit-point surface normal
     this._erase = false;   // current stroke erases instead of paints (Ctrl held)
 
     this._onDown = this._onDown.bind(this);
@@ -248,14 +250,14 @@ export class Painter {
     this._erase = e.ctrlKey || e.metaKey;     // Ctrl/Cmd erases instead of paints
     const hit = this._raycast(e);
     this._updateBrush(hit, this._erase);
-    if (hit) this._paintAt(hit.point);
+    if (hit) this._paintAt(hit);
   }
 
   _onMove(e) {
     const erase = this.painting ? this._erase : (e.ctrlKey || e.metaKey);
     const hit = this._raycast(e);
     this._updateBrush(hit, erase);
-    if (this.painting && hit) this._paintAt(hit.point);
+    if (this.painting && hit) this._paintAt(hit);
   }
 
   _onUp() {
@@ -263,19 +265,33 @@ export class Painter {
     if (this.controls) this.controls.enabled = true; // restore camera after a stroke
   }
 
-  _paintAt(hp) {
+  _paintAt(hit) {
     if (!this.enabled || !this.weights) return;
-    const pos = this.mesh.geometry.attributes.position.array;
+    const geo = this.mesh.geometry;
+    if (!geo.attributes.normal) geo.computeVertexNormals();
+    const pos = geo.attributes.position.array;
+    const nor = geo.attributes.normal.array;
     const mat = this.mesh.matrixWorld;
     const r2  = this.brushRadius * this.brushRadius;
     const val = this._erase ? 0 : 1;
-    let changed = false;
 
+    // Only affect the surface actually under the cursor: reject vertices whose
+    // normal faces away from the hit normal (back side, side walls, etc.), so
+    // the brush sphere doesn't bleed through the model's thickness.
+    const hn = this._hn;
+    const useNormal = !!hit.face;
+    if (useNormal) hn.copy(hit.face.normal).transformDirection(mat);
+    const hp = hit.point;
+
+    let changed = false;
     for (let i = 0, n = this.weights.length; i < n; i++) {
       this._v.set(pos[i*3], pos[i*3+1], pos[i*3+2]).applyMatrix4(mat);
-      if (this._v.distanceToSquared(hp) <= r2 && this.weights[i] !== val) {
-        this.weights[i] = val; changed = true;
+      if (this._v.distanceToSquared(hp) > r2) continue;
+      if (useNormal) {
+        this._vn.set(nor[i*3], nor[i*3+1], nor[i*3+2]).transformDirection(mat);
+        if (this._vn.dot(hn) < 0.35) continue;   // ~69° tolerance
       }
+      if (this.weights[i] !== val) { this.weights[i] = val; changed = true; }
     }
     if (changed) this._updateColors();
   }
