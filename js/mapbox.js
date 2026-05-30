@@ -2,6 +2,30 @@
 import { heightmapFromElevations } from './terrain.js';
 
 const GRID = 64;
+// Crop box matches the bezel face aspect ratio (W:D = 1.0 : 0.75)
+const BEZEL_ASPECT = 1.0 / 0.75;
+
+// Persist decoded elevation tiles across captures so panning back over an
+// already-visited area is instant (no re-fetch).
+const tileCache = new Map();
+
+// Pixel size of the centered crop box within a w×h map container.
+function cropBoxSize(w, h) {
+  const frac = 0.7;
+  const cw = w * frac, ch = h * frac;
+  return cw / ch > BEZEL_ASPECT
+    ? { bw: ch * BEZEL_ASPECT, bh: ch }
+    : { bw: cw, bh: cw / BEZEL_ASPECT };
+}
+
+function updateCropBox(map) {
+  const c = map.getCanvas();
+  const { bw, bh } = cropBoxSize(c.clientWidth, c.clientHeight);
+  const box = document.getElementById('map-selection-box');
+  box.style.width  = bw + 'px';
+  box.style.height = bh + 'px';
+  box.style.display = 'block';
+}
 
 export function initMap(onHeightmapReady) {
   const tokenInput = document.getElementById('input-mapbox-token');
@@ -32,7 +56,7 @@ function initMapboxGL(token, onHeightmapReady) {
   mapboxgl.accessToken = token;
   const map = new mapboxgl.Map({
     container: 'map',
-    style: 'mapbox://styles/mapbox/satellite-v9',
+    style: 'mapbox://styles/mapbox/light-v11',
     center: [-105.5, 39.7],
     zoom: 10,
     attributionControl: false,
@@ -40,30 +64,77 @@ function initMapboxGL(token, onHeightmapReady) {
   window._mapboxInstance = map;
   map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-right');
 
-  // Debounce: capture 600ms after the map settles
-  let debounceTimer = null;
+  // Live capture: update the ring on every move frame, throttled to one render
+  // at a time so captures never pile up. Cached tiles make this near real-time.
+  let capturing = false, pending = false, rafId = null;
+  async function runCapture() {
+    if (capturing) { pending = true; return; }
+    capturing = true;
+    try { await captureElevation(map, token, onHeightmapReady); }
+    finally {
+      capturing = false;
+      if (pending) { pending = false; runCapture(); }
+    }
+  }
   function scheduleCapture() {
-    clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(() => captureElevation(map, token, onHeightmapReady), 600);
+    if (rafId) return;
+    rafId = requestAnimationFrame(() => { rafId = null; runCapture(); });
   }
 
+  map.on('move', scheduleCapture);
   map.on('moveend', scheduleCapture);
   map.on('zoomend', scheduleCapture);
   // Trigger on initial load too
-  map.on('load', scheduleCapture);
+  map.on('load', () => { addTerrainStyling(map); updateCropBox(map); scheduleCapture(); });
+  map.on('resize', () => updateCropBox(map));
+}
+
+// Soft hillshade relief + blue water, matching the reference terrain look.
+function addTerrainStyling(map) {
+  if (!map.getSource('dem')) {
+    map.addSource('dem', { type: 'raster-dem', url: 'mapbox://mapbox.mapbox-terrain-dem-v1' });
+  }
+
+  // Insert the hillshade beneath the first label layer so place names stay on top.
+  let firstSymbol;
+  for (const l of map.getStyle().layers) {
+    if (l.type === 'symbol') { firstSymbol = l.id; break; }
+  }
+  if (!map.getLayer('hillshade')) {
+    map.addLayer({
+      id: 'hillshade',
+      type: 'hillshade',
+      source: 'dem',
+      paint: {
+        'hillshade-exaggeration': 0.5,
+        'hillshade-shadow-color': '#4f4f4f',
+        'hillshade-highlight-color': '#ffffff',
+        'hillshade-accent-color': '#d0d0d0',
+      },
+    }, firstSymbol);
+  }
+
+  // Flat blue water and rivers like the reference
+  if (map.getLayer('water'))    map.setPaintProperty('water', 'fill-color', '#5e87c0');
+  if (map.getLayer('waterway')) map.setPaintProperty('waterway', 'line-color', '#5e87c0');
 }
 
 async function captureElevation(map, token, onHeightmapReady) {
-  const bounds = map.getBounds();
   const tileZ = Math.min(Math.round(map.getZoom()), 14);
 
-  const west = bounds.getWest();
-  const east = bounds.getEast();
-  const north = bounds.getNorth();
-  const south = bounds.getSouth();
+  // Sample only the centered crop box (north-up map), not the whole view
+  const c = map.getCanvas();
+  const w = c.clientWidth, h = c.clientHeight;
+  const { bw, bh } = cropBoxSize(w, h);
+  const tl = map.unproject([w / 2 - bw / 2, h / 2 - bh / 2]);
+  const br = map.unproject([w / 2 + bw / 2, h / 2 + bh / 2]);
+
+  const west = tl.lng;
+  const east = br.lng;
+  const north = tl.lat;
+  const south = br.lat;
 
   const tileSize = 256;
-  const tileCache = new Map();
 
   async function getTileData(x, y, z) {
     const key = `${z}/${x}/${y}`;
