@@ -10,7 +10,12 @@
       "PowerShell(Start-Sleep 3; Add-Type -AssemblyName System.Windows.Forms; Add-Type -AssemblyName System.Drawing; $screen = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds; $bmp = New-Object System.Drawing.Bitmap\\($screen.Width, $screen.Height\\); $g = [System.Drawing.Graphics]::FromImage\\($bmp\\); $g.CopyFromScreen\\($screen.Location, [System.Drawing.Point]::Empty, $screen.Size\\); $bmp.Save\\(\"C:\\\\Users\\\\saifu\\\\AppData\\\\Local\\\\Temp\\\\ring-designer-screenshot.png\"\\); $g.Dispose\\(\\); $bmp.Dispose\\(\\); Write-Output \"Screenshot saved\")",
       "Bash(node --check js/ring.js)",
       "Bash(cat)",
-      "Bash(node /tmp/check.mjs)"
+      "Bash(node /tmp/check.mjs)",
+      "PowerShell(Get-CimInstance *)",
+      "PowerShell(Start-Sleep -Milliseconds 800; try { $r = Invoke-WebRequest -Uri 'http://localhost:7842/index.html' -UseBasicParsing -TimeoutSec 5; Write-Host \"HTTP $\\($r.StatusCode\\) - server is up, served $\\($r.RawContentLength\\) bytes\" } catch { Write-Host \"Request failed: $\\($_.Exception.Message\\)\" })",
+      "PowerShell(try { $r = Invoke-WebRequest -Uri 'http://localhost:7842/js/exporter.js' -UseBasicParsing -TimeoutSec 5; Write-Host \"HTTP $\\($r.StatusCode\\) - serving latest exporter.js \\($\\($r.RawContentLength\\) bytes\\)\" } catch { Write-Host \"Server not responding: $\\($_.Exception.Message\\)\" })",
+      "Bash(node --check js/main.js)",
+      "Bash(node --check js/exporter.js)"
     ]
   }
 }

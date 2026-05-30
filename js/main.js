@@ -6,7 +6,7 @@ import { initPicker }                            from './picker.js';
 import { initMap }                               from './mapbox.js';
 import { loadModel, getLargestMesh,
          autoDetectTopFace }                     from './loaders.js';
-import { exportSTL }                             from './exporter.js';
+import { exportGLB, exportSTL }                  from './exporter.js';
 import { Painter }                               from './painter.js';
 
 // ── Scene ────────────────────────────────────────────────────────────────────
@@ -38,8 +38,11 @@ let step = 0;
 function goTo(n) {
   n = Math.max(0, Math.min(STEPS.length - 1, n));
 
-  // Leaving paint mode when navigating away from zone
-  if (STEPS[step] === 'zone' && paintModeActive) _exitPaintMode();
+  // Leaving the zone step: stop painting and hide the detection/paint overlay
+  if (STEPS[step] === 'zone' && STEPS[n] !== 'zone') {
+    if (paintModeActive) _exitPaintMode();
+    painter.hideOverlay();
+  }
 
   step = n;
   document.querySelectorAll('.step-panel').forEach(p => p.classList.remove('active'));
@@ -61,8 +64,8 @@ function goTo(n) {
 
 document.getElementById('btn-prev').addEventListener('click', () => goTo(step - 1));
 document.getElementById('btn-next').addEventListener('click', () => goTo(step + 1));
-document.getElementById('btn-next-bottom').addEventListener('click', () => {
-  if (step === STEPS.length - 1) exportSTL(currentRing, 'ring-terrain.stl');
+document.getElementById('btn-next-bottom').addEventListener('click', e => {
+  if (step === STEPS.length - 1) { e.stopPropagation(); openExportMenu(); }
   else goTo(step + 1);
 });
 document.querySelectorAll('.progress-step').forEach(el =>
@@ -199,8 +202,14 @@ btnPaintToggle.addEventListener('click', () => {
 document.getElementById('btn-paint-clear').addEventListener('click', () => {
   painter.clear();
   document.getElementById('zone-paint-status').textContent = '0 vertices painted';
-  clearCustomTarget();
-  if (currentHeightmap) applyDisplacement(heightPct, currentHeightmap);
+  if (painter.mesh) {
+    // Rebuild target with the now-zeroed weights so the mesh resets to its base
+    setCustomTarget(painter.mesh, painter.weights);
+    if (currentHeightmap) applyDisplacement(heightPct, currentHeightmap);
+  } else {
+    clearCustomTarget();
+    if (currentHeightmap) applyDisplacement(heightPct, currentHeightmap);
+  }
 });
 
 function _enterPaintMode() {
@@ -295,8 +304,27 @@ document.querySelectorAll('.detail-card').forEach(card => {
 });
 
 // ── Export ───────────────────────────────────────────────────────────────────
-document.getElementById('btn-share').addEventListener('click', () => {
-  if (currentRing) exportSTL(currentRing, 'ring-terrain.stl');
+const exportMenu = document.getElementById('export-menu');
+function openExportMenu()  { if (currentRing) exportMenu.classList.remove('hidden'); }
+function closeExportMenu() { exportMenu.classList.add('hidden'); }
+
+document.getElementById('btn-share').addEventListener('click', e => {
+  if (!currentRing) return;
+  e.stopPropagation();
+  exportMenu.classList.toggle('hidden');
 });
+
+exportMenu.querySelectorAll('.export-opt').forEach(opt => {
+  opt.addEventListener('click', e => {
+    e.stopPropagation();
+    if (!currentRing) return;
+    if (opt.dataset.fmt === 'glb') exportGLB(currentRing, 'ring-terrain.glb');
+    else                           exportSTL(currentRing, 'ring-terrain.stl');
+    closeExportMenu();
+  });
+});
+
+// Dismiss the menu when clicking anywhere else
+document.addEventListener('click', closeExportMenu);
 
 goTo(0);

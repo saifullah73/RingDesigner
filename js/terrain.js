@@ -1,3 +1,4 @@
+import * as THREE from 'three';
 import * as Ring from './ring.js';
 
 // ── Custom displacement target (uploaded models) ─────────────────────────────
@@ -6,26 +7,39 @@ let customTarget = null;
 
 const CUSTOM_MAX_DISPLACE = 0.35;
 
+// Pristine, undisplaced positions for a mesh, captured once and reused. This
+// prevents re-snapshotting already-displaced geometry (which would compound the
+// displacement every frame while painting).
+function getBasePositions(mesh) {
+  if (!mesh.userData.basePositions) {
+    mesh.userData.basePositions = Float32Array.from(mesh.geometry.attributes.position.array);
+  }
+  return mesh.userData.basePositions;
+}
+
 export function setCustomTarget(mesh, weights) {
   if (!mesh) { customTarget = null; return; }
 
-  const geo = mesh.geometry;
-  const pos = geo.attributes.position.array;
-  const n   = pos.length / 3;
+  const geo     = mesh.geometry;
+  const basePos = getBasePositions(mesh);
+  const n       = basePos.length / 3;
 
-  // Snapshot current positions as base
-  const basePos = new Float32Array(pos.length);
-  basePos.set(pos);
+  // Detection and "up" are defined in world space, so project UVs and displace
+  // in world space too — the model is usually rotated, so local axes don't
+  // align with up. Map the painted region onto the world X-Z plane for UVs.
+  mesh.updateWorldMatrix(true, false);
+  const mat = mesh.matrixWorld;
+  const v   = new THREE.Vector3();
 
-  // Top-down bounding-box UV projection over painted region
   let minX = Infinity, maxX = -Infinity;
   let minZ = Infinity, maxZ = -Infinity;
   for (let i = 0; i < n; i++) {
     if (weights && weights[i] <= 0) continue;
-    if (pos[i*3]   < minX) minX = pos[i*3];
-    if (pos[i*3]   > maxX) maxX = pos[i*3];
-    if (pos[i*3+2] < minZ) minZ = pos[i*3+2];
-    if (pos[i*3+2] > maxZ) maxZ = pos[i*3+2];
+    v.set(basePos[i*3], basePos[i*3+1], basePos[i*3+2]).applyMatrix4(mat);
+    if (v.x < minX) minX = v.x;
+    if (v.x > maxX) maxX = v.x;
+    if (v.z < minZ) minZ = v.z;
+    if (v.z > maxZ) maxZ = v.z;
   }
   if (!isFinite(minX)) { minX = 0; maxX = 1; minZ = 0; maxZ = 1; }
   const rX = maxX - minX || 1;
@@ -33,11 +47,12 @@ export function setCustomTarget(mesh, weights) {
 
   const uvs = new Float32Array(n * 2);
   for (let i = 0; i < n; i++) {
-    uvs[i*2]     = (pos[i*3]   - minX) / rX;
-    uvs[i*2 + 1] = (pos[i*3+2] - minZ) / rZ;
+    v.set(basePos[i*3], basePos[i*3+1], basePos[i*3+2]).applyMatrix4(mat);
+    uvs[i*2]     = (v.x - minX) / rX;
+    uvs[i*2 + 1] = (v.z - minZ) / rZ;
   }
 
-  customTarget = { geo, basePos, weights, uvs };
+  customTarget = { geo, mesh, basePos, weights, uvs };
 }
 
 export function clearCustomTarget() { customTarget = null; }
@@ -74,7 +89,7 @@ function _applyDefault(heightPct, heightmap) {
 
 // ── Uploaded model with weight map ───────────────────────────────────────────
 function _applyCustom(heightPct, heightmap) {
-  const { geo, basePos, weights, uvs } = customTarget;
+  const { geo, mesh, basePos, weights, uvs } = customTarget;
   if (!geo || !heightmap) return;
 
   const pos       = geo.attributes.position.array;
@@ -82,15 +97,28 @@ function _applyCustom(heightPct, heightmap) {
   const srcStride = Math.round(Math.sqrt(heightmap.length));
   const n         = pos.length / 3;
 
+  // Displace along world-up, then convert back to local space to write into the
+  // geometry, so terrain rises "up" regardless of how the model is rotated.
+  mesh.updateWorldMatrix(true, false);
+  const mat = mesh.matrixWorld;
+  const inv = new THREE.Matrix4().copy(mat).invert();
+  const wv  = new THREE.Vector3();
+
   for (let i = 0; i < n; i++) {
     const w = weights ? weights[i] : 1;
-    // Always reset to base first
-    pos[i*3]   = basePos[i*3];
-    pos[i*3+1] = basePos[i*3+1];
-    pos[i*3+2] = basePos[i*3+2];
     if (w > 0) {
       const h = sampleBilinear(heightmap, srcStride, uvs[i*2], uvs[i*2+1]);
-      pos[i*3+1] += h * scale * w;
+      wv.set(basePos[i*3], basePos[i*3+1], basePos[i*3+2]).applyMatrix4(mat);
+      wv.y += h * scale * w;
+      wv.applyMatrix4(inv);
+      pos[i*3]   = wv.x;
+      pos[i*3+1] = wv.y;
+      pos[i*3+2] = wv.z;
+    } else {
+      // Reset untouched vertices to base
+      pos[i*3]   = basePos[i*3];
+      pos[i*3+1] = basePos[i*3+1];
+      pos[i*3+2] = basePos[i*3+2];
     }
   }
 

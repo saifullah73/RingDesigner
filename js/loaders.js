@@ -54,33 +54,30 @@ export function getLargestMesh(group) {
   return best;
 }
 
-// Auto-detect top face vertices: upward normals + near top of model
-// Returns Float32Array of weights (1 = detected, 0 = not)
+// Auto-detect top face vertices by world-space normal direction.
+// thresholdPct is the allowed tilt of a face away from world-up: low = strict
+// (near-vertical normals only), high = lenient (catches tilted/rotated faces).
+// Returns Float32Array of weights (1 = detected, 0 = not).
 export function autoDetectTopFace(mesh, thresholdPct) {
   mesh.updateWorldMatrix(true, false);
   const geo = mesh.geometry;
   if (!geo.attributes.normal) geo.computeVertexNormals();
 
-  const pos = geo.attributes.position.array;
   const nor = geo.attributes.normal.array;
-  const n   = pos.length / 3;
+  const n   = nor.length / 3;
   const mat = mesh.matrixWorld;
   const nm  = new THREE.Matrix3().getNormalMatrix(mat);
 
-  // World-space Y extents
-  let maxY = -Infinity, minY = Infinity;
-  for (let i = 0; i < n; i++) {
-    const wy = new THREE.Vector3(pos[i*3], pos[i*3+1], pos[i*3+2]).applyMatrix4(mat).y;
-    if (wy > maxY) maxY = wy;
-    if (wy < minY) minY = wy;
-  }
-  const yThresh = maxY - (maxY - minY) * (thresholdPct / 100);
+  // Map threshold (1–50) → max tilt from world-up (~1°–60°); minDot is the
+  // smallest world-up component a normal may have to count as "top".
+  const maxTilt = (thresholdPct / 50) * (Math.PI / 3);
+  const minDot  = Math.cos(maxTilt);
 
   const weights = new Float32Array(n);
+  const wn = new THREE.Vector3();
   for (let i = 0; i < n; i++) {
-    const wp = new THREE.Vector3(pos[i*3], pos[i*3+1], pos[i*3+2]).applyMatrix4(mat);
-    const wn = new THREE.Vector3(nor[i*3], nor[i*3+1], nor[i*3+2]).applyMatrix3(nm).normalize();
-    if (wp.y >= yThresh && wn.y > 0.55) weights[i] = 1;
+    wn.set(nor[i*3], nor[i*3+1], nor[i*3+2]).applyMatrix3(nm).normalize();
+    if (wn.y >= minDot) weights[i] = 1;
   }
   return weights;
 }

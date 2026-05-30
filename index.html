@@ -16,10 +16,16 @@
       <div class="ring-label">
         <span id="ring-name">SIGNET RING</span>
       </div>
-      <button id="btn-share" class="share-btn">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
-        Export STL
-      </button>
+      <div class="export-wrap">
+        <div id="export-menu" class="export-menu hidden">
+          <button class="export-opt" data-fmt="glb">Export as GLB</button>
+          <button class="export-opt" data-fmt="stl">Export as STL</button>
+        </div>
+        <button id="btn-share" class="share-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+          Export
+        </button>
+      </div>
     </div>
 
     <!-- Right: Editor Panel -->
