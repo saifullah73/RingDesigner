@@ -318,6 +318,7 @@ exportMenu.querySelectorAll('.export-opt').forEach(opt => {
   opt.addEventListener('click', e => {
     e.stopPropagation();
     if (!currentRing) return;
+    painter.hideOverlay();   // keep the paint overlay out of the exported model
     if (opt.dataset.fmt === 'glb') exportGLB(currentRing, 'ring-terrain.glb');
     else                           exportSTL(currentRing, 'ring-terrain.stl');
     closeExportMenu();

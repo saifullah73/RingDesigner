@@ -15,7 +15,9 @@
       "PowerShell(Start-Sleep -Milliseconds 800; try { $r = Invoke-WebRequest -Uri 'http://localhost:7842/index.html' -UseBasicParsing -TimeoutSec 5; Write-Host \"HTTP $\\($r.StatusCode\\) - server is up, served $\\($r.RawContentLength\\) bytes\" } catch { Write-Host \"Request failed: $\\($_.Exception.Message\\)\" })",
       "PowerShell(try { $r = Invoke-WebRequest -Uri 'http://localhost:7842/js/exporter.js' -UseBasicParsing -TimeoutSec 5; Write-Host \"HTTP $\\($r.StatusCode\\) - serving latest exporter.js \\($\\($r.RawContentLength\\) bytes\\)\" } catch { Write-Host \"Server not responding: $\\($_.Exception.Message\\)\" })",
       "Bash(node --check js/main.js)",
-      "Bash(node --check js/exporter.js)"
+      "Bash(node --check js/exporter.js)",
+      "Bash(node --check js/painter.js)",
+      "PowerShell(try { $r = Invoke-WebRequest -Uri 'http://localhost:7842/js/painter.js' -UseBasicParsing -TimeoutSec 5; Write-Host \"HTTP $\\($r.StatusCode\\) - painter.js $\\($r.RawContentLength\\) bytes\" } catch { Write-Host \"Server down: $\\($_.Exception.Message\\)\" })"
     ]
   }
 }
