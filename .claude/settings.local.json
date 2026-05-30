@@ -20,7 +20,9 @@
       "PowerShell(try { $r = Invoke-WebRequest -Uri 'http://localhost:7842/js/painter.js' -UseBasicParsing -TimeoutSec 5; Write-Host \"HTTP $\\($r.StatusCode\\) - painter.js $\\($r.RawContentLength\\) bytes\" } catch { Write-Host \"Server down: $\\($_.Exception.Message\\)\" })",
       "Bash(node --check js/terrain.js)",
       "Bash(node --check js/mapbox.js)",
-      "PowerShell(try { $r = Invoke-WebRequest -Uri 'http://localhost:7842/js/mapbox.js' -UseBasicParsing -TimeoutSec 5; Write-Host \"HTTP $\\($r.StatusCode\\) - mapbox.js $\\($r.RawContentLength\\) bytes\" } catch { Write-Host \"Server down: $\\($_.Exception.Message\\)\" })"
+      "PowerShell(try { $r = Invoke-WebRequest -Uri 'http://localhost:7842/js/mapbox.js' -UseBasicParsing -TimeoutSec 5; Write-Host \"HTTP $\\($r.StatusCode\\) - mapbox.js $\\($r.RawContentLength\\) bytes\" } catch { Write-Host \"Server down: $\\($_.Exception.Message\\)\" })",
+      "Bash(git commit -m 'Stop tracking .claude directory *)",
+      "Bash(git push *)"
     ]
   }
 }
